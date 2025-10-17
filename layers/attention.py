@@ -14,6 +14,12 @@ class CausalSelfAttention:
         self.v_proj = Linear(n_embed, n_embed)
         self.out_proj = Linear(n_embed, n_embed)
 
+    def parameters(self):
+        yield from self.q_proj.parameters()
+        yield from self.k_proj.parameters()
+        yield from self.v_proj.parameters()
+        yield from self.out_proj.parameters()
+
     def __call__(self, x, debug=False):
         if debug:
             import pdb

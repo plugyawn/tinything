@@ -1,3 +1,5 @@
+from itertools import chain 
+
 import numpy as np
 from tinygrad.tensor import Tensor
 from tqdm import tqdm
@@ -32,11 +34,19 @@ class GPT:
             for _ in range(self.layers)
         ]
 
+    def parameters(self):
+        for layer in self.blocks:
+            for param in layer:
+                yield from param.parameters()
+        yield from self.token_embedding.parameters()
+        yield from self.ln_f.parameters()
+        yield from self.output_head.parameters()
+
     def __call__(self, idx, debug=False):
         if debug:
             import pdb
-
             pdb.set_trace()
+
         B, T = idx.shape  # batch size, sequence length
         tok_emb = self.token_embedding(idx)  # token embeddings
         x = tok_emb  # setup residual stream
@@ -52,25 +62,20 @@ class GPT:
 def train(
     model, train_data, get_batch, optimizer, epochs=10, block_size=128, batch_size=32
 ):
-    print(
-        generate(
-            model,
-            Tensor(np.array([[0]], dtype=np.int32)),
-            max_new_tokens=10,
-            block_size=block_size,
-        )
-    )
     for epoch in range(epochs):
         losses = []
+
         for _ in tqdm(
             range(len(train_data) // (batch_size * block_size)),
             desc=f"Epoch {epoch+1}/{epochs}",
         ):
+            
             x_batch, y_batch = get_batch(train_data, block_size, batch_size)
             logits = model(x_batch)
-            loss = cross_entropy(logits, y_batch)
+            loss = cross_entropy(logits, y_batch).mean()
             loss.backward()
-            optimizer.step()
+            optimizer.step(debug = False)
+
             optimizer.zero_grad()
 
             losses.append(loss.item())
@@ -117,16 +122,43 @@ if __name__ == "__main__":
     )
 
     model = GPT(vocab_size, n_embed, n_head, n_layer, block_size)
+
+    print(next(model.blocks[0][1].parameters()))
+    tracked = []
+    # def get_all_parameters(model):
+    # for layer in model.blocks:
+    #     for param in layer:
+    #         for sub_par in param.parameters():
+    #             sub_par.grad = Tensor.zeros_like(sub_par)
+    #             for _p in sub_par:
+    #                 _p.grad = Tensor.zeros_like(_p)
+                    # import pdb;pdb.set_trace()
+                # if p.requires_grad:
+                #     p.grad = Tensor.zeros_like(p)  
+    tracked_iter = []
+    tracked += list(chain.from_iterable(model.parameters()))
+    # for layer in model.blocks:
+    #     for param in layer:
+    #         # for sub_par in param.parameters():
+    #             # tracked.append(sub_par)
+    #             # import pdb;pdb.set_trace()
+    #             # for _p in sub_par:
+    #             #     tracked.append(_p)
+    #             # tracked_iter += list(sub_par.parameters())
+    #         tracked += (list(chain.from_iterable(param.parameters())))
+    # tracked += chain.from_iterable([chain.from_iterable(p.parameters()) for p in [
+    #         model.token_embedding,
+    #         model.ln_f,
+    #         model.output_head,
+    #     ]])
+    # tracked = [Tensor.zeros_like(p) for p in tracked]
+    
+    print("Length comparison:", len(tracked))
+    
+    import pdb;pdb.set_trace()
+    # print(next(layer.parameters() for layer in model.blocks))
     optimizer = SGDOptimizer(
-        [param for layer in model.blocks for param in layer]
-        + [
-            model.token_embedding.weight,
-            model.position_embedding.weight,
-            model.ln_f.weight,
-            model.ln_f.bias,
-            model.head.weight,
-            model.head.bias,
-        ],
+        tracked,
         lr=1e-3,
     )
 

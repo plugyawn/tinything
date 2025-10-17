@@ -20,4 +20,7 @@ def apply_rope(x):
 
     x1, x2 = x[..., :half_dim], x[..., half_dim:]
     x_rot = Tensor.cat(x1 * cos - x2 * sin, x1 * sin + x2 * cos, dim=-1)
+    x1.requires_grad = x2.requires_grad = sin.requires_grad = cos.requires_grad = False
+    x_rot.requires_grad = False
+
     return x_rot
