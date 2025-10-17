@@ -1,11 +1,13 @@
 import numpy as np
 from tinygrad.tensor import Tensor
 
+
 class LayerNorm:
     """
     Layer Normalization layer.
     Normalizes the input across the last dimension.
     """
+
     def __init__(self, normalized_shape, eps=1e-5):
         self.normalized_shape = normalized_shape
         self.eps = eps
