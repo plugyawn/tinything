@@ -8,7 +8,7 @@ from layers.attention import CausalSelfAttention
 from layers.feedforward import Linear, SwiGLU
 from layers.lookup import Embedding
 from layers.norm import LayerNorm
-from optimizers.sgd import SGDOptimizer
+from optimizers.sgd import SGDOptimizer, AdamOptimizer
 from utils.dataloader import load_data
 from utils.loss_functions import cross_entropy
 
@@ -112,9 +112,9 @@ def generate(model, idx, max_new_tokens, block_size):
 if __name__ == "__main__":
     block_size = 128
     batch_size = 32
-    n_embed = 64
+    n_embed = 32
     n_head = 4
-    n_layer = 3
+    n_layer = 2
     epochs = 10
 
     get_batch, train_data, val_data, stoi, itos, vocab_size = load_data(
@@ -132,7 +132,11 @@ if __name__ == "__main__":
     
     import pdb;pdb.set_trace()
     # print(next(layer.parameters() for layer in model.blocks))
-    optimizer = SGDOptimizer(
+    # optimizer = SGDOptimizer(
+    #     tracked,
+    #     lr=1e-3,
+    # )
+    optimizer = AdamOptimizer(
         tracked,
         lr=1e-3,
     )
