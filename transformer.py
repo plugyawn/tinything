@@ -130,7 +130,7 @@ if __name__ == "__main__":
     
     print("Length comparison:", len(tracked))
     
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     # print(next(layer.parameters() for layer in model.blocks))
     # optimizer = SGDOptimizer(
     #     tracked,
