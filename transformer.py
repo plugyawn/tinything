@@ -20,7 +20,6 @@ class GPT:
         self.token_embedding = Embedding(vocab_size, n_embed)
         self.position_embedding = Embedding(block_size, n_embed)
         self.layers = n_layer
-        # self.layers = [CausalSelfAttention(n_embed, n_head, block_size) for _ in range(n_layer)]
         self.ln_f = LayerNorm(n_embed)
         self.head = Linear(n_embed, vocab_size)
 
@@ -29,7 +28,6 @@ class GPT:
                 LayerNorm(n_embed),
                 CausalSelfAttention(n_embed, n_head, block_size),
                 SwiGLU(n_embed, 4 * n_embed),  # feed-forward expansion
-                # SwiGLU(4 * n_embed, n_embed) # feed-forward projection
             )
             for _ in range(self.layers)
         ]
@@ -41,9 +39,7 @@ class GPT:
             pdb.set_trace()
         B, T = idx.shape  # batch size, sequence length
         tok_emb = self.token_embedding(idx)  # token embeddings
-        # pos = Tensor.arange(T) # simple, linear positions
-        # pos_emb = self.position_embedding(pos) # position embeddings
-        x = tok_emb  # combine token and position embeddings
+        x = tok_emb  # setup residual stream
 
         for ln, attn, swiglu in self.blocks:
             x = x + attn(ln(x), debug=False)  # attention block
