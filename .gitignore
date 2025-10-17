@@ -1,6 +1,16 @@
-.venv
 # .gitignore
 __pycache__/
 .venv/
 .DS_Store
 *.pyc
+
+# The uv-created virtual environment
+.venv/
+
+# Byte-compiled Python files
+__pycache__/
+*.py[co]
+
+# Built distribution files
+dist/
+build/
