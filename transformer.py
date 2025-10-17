@@ -1,131 +1,21 @@
 import numpy as np
 from tinygrad.tensor import Tensor
 from tinygrad.nn import Linear, Embedding, LayerNorm
-
+from utilsold import load_data
+from loss_functions import cross_entropy
 from tqdm import tqdm
 
-class Linear:
-    """
-    Basic linear layer.
-    Does Ax + B; A is weights, B is bias.
-    Set bias to False to disable bias.
-    """
-    def __init__(self, in_features, out_features, bias=True):
-        self.in_features = in_features
-        self.out_features = out_features
-        self.weight = Tensor.randn(out_features, in_features) / np.sqrt(in_features)
-        self.bias = Tensor.zeros(out_features) if bias else None
+from layers.attention import CausalSelfAttention
+from layers.feedforward import Linear, SwiGLU
+from layers.lookup import Embedding
+from layers.norm import LayerNorm
 
-    def __call__(self, x):
-        y = x.dot(self.weight.T)
-        if self.bias is not None:
-            y += self.bias
-        return y
-    
-class LayerNorm:
-    """
-    Layer Normalization layer.
-    Normalizes the input across the last dimension.
-    """
-    def __init__(self, normalized_shape, eps=1e-5):
-        self.normalized_shape = normalized_shape
-        self.eps = eps
-        self.weight = Tensor.ones(normalized_shape)
-        self.bias = Tensor.zeros(normalized_shape)
+from utils.loss_functions import cross_entropy
+from utils.transformer_methods import apply_rope
+from utils.dataloader import load_data
 
-    def __call__(self, x):
-        mean = x.mean(axis=-1)
-        mean = mean.unsqueeze(-1)
-        variance = ((x - mean) ** 2).mean(axis=-1)
-        variance = variance.unsqueeze(-1)
-        x_normalized = (x - mean) / (variance + self.eps).sqrt()
-        return x_normalized * self.weight + self.bias
-    
-class CausalSelfAttention:
-    def __init__(self, n_embed, n_head, block_size):
-        self.n_head = n_head
-        self.block_size = block_size
-        self.q_proj = Linear(n_embed, n_embed)
-        self.k_proj = Linear(n_embed, n_embed)
-        self.v_proj = Linear(n_embed, n_embed)
-        self.out_proj = Linear(n_embed, n_embed)
-    
-    def __call__(self, x, debug = False):
-        if debug: import pdb; pdb.set_trace()
-        B, T, C = x.shape
-        H = self.n_head
-        assert C % H == 0, "Embedding dimension must be divisible by number of heads"
-        head_size = C // H 
-        q = self.q_proj(x)
-        k = self.k_proj(x)
-        v = self.v_proj(x)
+from optimizers.sgd import SGDOptimizer
 
-        q = q.reshape(B, T, H, head_size).permute(0, 2, 1, 3)  # split heads, permute
-        k = k.reshape(B, T, H, head_size).permute(0, 2, 1, 3) # permute for matmul
-        q = apply_rope(q)
-        k = apply_rope(k)
-        k = k.permute(0, 1, 3, 2)
-        v = v.reshape(B, T, H, head_size).permute(0, 2, 1, 3)
-
-        att = (q@k) / (C // self.n_head) ** 0.5  # scaled dot-product attention
-        mask = Tensor.ones(T, T).tril() # tri - triangular, l - lower
-        att = att.masked_fill(mask == 0, float('-inf'))
-        att = att.softmax(-1)
-        y = att @ v  # attention output
-
-        # reassemble all head outputs side by side
-        y = y.permute(0, 2, 1, 3).reshape(B, T, C)
-        return self.out_proj(y)
-
-class Embedding:
-    """
-    Embedding layer.
-    Maps discrete tokens to continuous vectors.
-    """
-    def __init__(self, num_embeddings, embedding_dim):
-        self.num_embeddings = num_embeddings
-        self.embedding_dim = embedding_dim
-        self.weight = Tensor.randn(self.num_embeddings, self.embedding_dim) / np.sqrt(self.embedding_dim)
-
-    def __call__(self, x):
-        # x is a Tensor of indices, use Tensor indexing to get embeddings
-        import pdb
-        # pdb.set_trace()
-        if not isinstance(x, Tensor):
-            x = Tensor(x)
-        return self.weight[x]
-        
-def apply_rope(x):
-    """
-    x: (B, n_head, T, head_dim)
-    """
-    B, n_head, T, head_dim = x.shape
-    half_dim = head_dim // 2
-    theta = 10000 ** (-np.arange(0, half_dim, dtype=np.float32) / np.float32(half_dim))
-    pos = Tensor.arange(T).reshape(T, 1)
-    freqs = Tensor(theta).reshape(1, half_dim)
-    angles = pos * freqs  # (T, half_dim)
-    sin = angles.sin()
-    cos = angles.cos()
-
-    sin = sin.reshape(1, 1, T, half_dim)
-    cos = cos.reshape(1, 1, T, half_dim)
-
-    x1, x2 = x[..., :half_dim], x[..., half_dim:]
-    x_rot = Tensor.cat(x1 * cos - x2 * sin, x1 * sin + x2 * cos, dim=-1)
-    return x_rot
-
-def swish(x):
-    return x * x.sigmoid()
-
-class SwiGLU:
-    def __init__(self, dim, hidden_dim):
-        self.w1 = Linear(dim, hidden_dim)
-        self.w2 = Linear(dim, hidden_dim)
-        self.w3 = Linear(hidden_dim, dim)
-    def __call__(self, x):
-        return self.w3(self.w1(x) * swish(self.w2(x)))
-    
 class GPT:
     """
     GPT model class with simple pos embs.
@@ -164,9 +54,7 @@ class GPT:
         x = self.ln_f(x) # final layer norm
         logits = self.head(x) # output logits
         return logits
-    
-from utils import load_data
-from loss_functions import cross_entropy
+
 
 def train(model, train_data, get_batch, optimizer, epochs = 10, block_size=128, batch_size=32):
     print(generate(model, Tensor(np.array([[0]], dtype=np.int32)), max_new_tokens=10, block_size=block_size))
@@ -185,31 +73,10 @@ def train(model, train_data, get_batch, optimizer, epochs = 10, block_size=128, 
         print(f"Epoch {epoch+1} Loss: {np.mean(losses)}")
         print(generate(model, Tensor(np.array([[0]], dtype=np.int32)), max_new_tokens=10, block_size=block_size))
 
-class SGDOptimizer:
-    def __init__(self, parameters, lr=3e-4):
-        self.parameters = parameters
-        self.lr = lr
-
-    def step(self):
-        for param in self.parameters:
-            if hasattr(param, 'grad') and param.grad is not None:
-                param.data -= self.lr * param.grad.data
-
-    def zero_grad(self):
-        for param in self.parameters:
-            if hasattr(param, 'grad') and param.grad is not None:
-                param.grad = Tensor.zeros_like(param)
-    
-
 
 def generate(model, idx, max_new_tokens, block_size):
     """
     Generate new tokens from the model given a starting sequence idx.
-    Args:
-        model: The trained GPT model.
-        idx: Tensor of shape (1, T) containing the starting token indices.
-        max_new_tokens: Number of tokens to generate.
-        block_size: The context size of the model.
     """
 
     for _ in (range(max_new_tokens)):
