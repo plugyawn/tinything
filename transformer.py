@@ -125,33 +125,8 @@ if __name__ == "__main__":
 
     print(next(model.blocks[0][1].parameters()))
     tracked = []
-    # def get_all_parameters(model):
-    # for layer in model.blocks:
-    #     for param in layer:
-    #         for sub_par in param.parameters():
-    #             sub_par.grad = Tensor.zeros_like(sub_par)
-    #             for _p in sub_par:
-    #                 _p.grad = Tensor.zeros_like(_p)
-                    # import pdb;pdb.set_trace()
-                # if p.requires_grad:
-                #     p.grad = Tensor.zeros_like(p)  
     tracked_iter = []
     tracked += list(chain.from_iterable(model.parameters()))
-    # for layer in model.blocks:
-    #     for param in layer:
-    #         # for sub_par in param.parameters():
-    #             # tracked.append(sub_par)
-    #             # import pdb;pdb.set_trace()
-    #             # for _p in sub_par:
-    #             #     tracked.append(_p)
-    #             # tracked_iter += list(sub_par.parameters())
-    #         tracked += (list(chain.from_iterable(param.parameters())))
-    # tracked += chain.from_iterable([chain.from_iterable(p.parameters()) for p in [
-    #         model.token_embedding,
-    #         model.ln_f,
-    #         model.output_head,
-    #     ]])
-    # tracked = [Tensor.zeros_like(p) for p in tracked]
     
     print("Length comparison:", len(tracked))
     

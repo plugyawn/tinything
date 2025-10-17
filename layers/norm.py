@@ -10,12 +10,11 @@ class LayerNorm:
 
     def __init__(self, normalized_shape, eps=1e-5):
         self.normalized_shape = normalized_shape
-        self.eps = Tensor([eps])
+        self.eps = eps
         self.weight = Tensor.ones(normalized_shape)
         self.bias = Tensor.zeros(normalized_shape)
         self.weight.requires_grad = True
         self.bias.requires_grad = True
-        self.eps.requires_grad_(False)
 
     def parameters(self): 
         yield self.weight
@@ -26,7 +25,7 @@ class LayerNorm:
         if debug:
             import pdb
             pdb.set_trace()
-        # import pdb;pdb.set_trace()
+
         mean = x.mean(axis=-1)
         mean = mean.unsqueeze(-1)
         variance = ((x - mean) ** 2).mean(axis=-1)

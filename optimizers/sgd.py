@@ -26,11 +26,7 @@ class SGDOptimizer:
             pdb.set_trace()
 
         for param in self.parameters:
-            # print(param.requires_grad, param.grad)
             if hasattr(param, "grad"):
                 param.grad = Tensor.zeros_like(param)
             else:
-                # import pdb
-                # pdb.set_trace()
-                # pass
                 print(f"Warning: Parameter {param} has no grad to zero.")
