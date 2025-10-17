@@ -117,7 +117,7 @@ if __name__ == "__main__":
     epochs = 10
 
     get_batch, train_data, val_data, stoi, itos, vocab_size = load_data(
-        "input.txt", block_size, batch_size
+        "data/alice_in_wonderland.txt", block_size, batch_size
     )
 
     model = GPT(vocab_size, n_embed, n_head, n_layer, block_size)
