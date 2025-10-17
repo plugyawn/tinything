@@ -1,8 +1,5 @@
 import numpy as np
 from tinygrad.tensor import Tensor
-from tinygrad.nn import Linear, Embedding, LayerNorm
-from utilsold import load_data
-from loss_functions import cross_entropy
 from tqdm import tqdm
 
 from layers.attention import CausalSelfAttention
@@ -11,7 +8,6 @@ from layers.lookup import Embedding
 from layers.norm import LayerNorm
 
 from utils.loss_functions import cross_entropy
-from utils.transformer_methods import apply_rope
 from utils.dataloader import load_data
 
 from optimizers.sgd import SGDOptimizer
