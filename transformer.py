@@ -21,7 +21,7 @@ class GPT:
         self.position_embedding = Embedding(block_size, n_embed)
         self.layers = n_layer
         self.ln_f = LayerNorm(n_embed)
-        self.head = Linear(n_embed, vocab_size)
+        self.output_head = Linear(n_embed, vocab_size)
 
         self.blocks = [
             (
@@ -45,7 +45,7 @@ class GPT:
             x = x + attn(ln(x), debug=False)  # attention block
             x = x + swiglu((ln(x)))  # feed-forward block
         x = self.ln_f(x)  # final layer norm
-        logits = self.head(x)  # output logits
+        logits = self.output_head(x)  # output logits
         return logits
 
 
