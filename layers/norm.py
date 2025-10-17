@@ -14,7 +14,11 @@ class LayerNorm:
         self.weight = Tensor.ones(normalized_shape)
         self.bias = Tensor.zeros(normalized_shape)
 
-    def __call__(self, x):
+    def __call__(self, x, debug = False):
+        if debug:
+            import pdb
+            pdb.set_trace()
+            
         mean = x.mean(axis=-1)
         mean = mean.unsqueeze(-1)
         variance = ((x - mean) ** 2).mean(axis=-1)

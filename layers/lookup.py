@@ -15,11 +15,12 @@ class Embedding:
             self.embedding_dim
         )
 
-    def __call__(self, x):
+    def __call__(self, x, debug = False):
         # x is a Tensor of indices, use Tensor indexing to get embeddings
-        import pdb
+        if debug:
+            import pdb
+            pdb.set_trace()
 
-        # pdb.set_trace()
         if not isinstance(x, Tensor):
             x = Tensor(x)
         return self.weight[x]

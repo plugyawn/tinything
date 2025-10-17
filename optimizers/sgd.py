@@ -7,12 +7,20 @@ class SGDOptimizer:
         self.parameters = parameters
         self.lr = lr
 
-    def step(self):
+    def step(self, debug = False):
+        if debug:
+            import pdb
+            pdb.set_trace()
+
         for param in self.parameters:
             if hasattr(param, "grad") and param.grad is not None:
                 param.data -= self.lr * param.grad.data
 
-    def zero_grad(self):
+    def zero_grad(self, debug = False):
+        if debug:
+            import pdb
+            pdb.set_trace()
+            
         for param in self.parameters:
             if hasattr(param, "grad") and param.grad is not None:
                 param.grad = Tensor.zeros_like(param)

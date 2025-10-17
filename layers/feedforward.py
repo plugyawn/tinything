@@ -15,7 +15,11 @@ class Linear:
         self.weight = Tensor.randn(out_features, in_features) / np.sqrt(in_features)
         self.bias = Tensor.zeros(out_features) if bias else None
 
-    def __call__(self, x):
+    def __call__(self, x, debug = False):
+        if debug:
+            import pdb
+            pdb.set_trace()
+            
         y = x.dot(self.weight.T)
         if self.bias is not None:
             y += self.bias
